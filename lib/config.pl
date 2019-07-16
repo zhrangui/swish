@@ -134,6 +134,8 @@ warn_duplicate_config([K-V1,K-V2|T0], [K-V1|T]) :- !,
 	collect_same(K, T0, VL, T1),
 	(   warned_duplicate(K)
 	->  true
+	;   sort([V1,V2|VL], [_])
+	->  true
 	;   print_message(warning, swish(duplicate_config(K, [V1,V2|VL]))),
 	    assertz(warned_duplicate(K))
 	),
@@ -184,11 +186,11 @@ swish_config(Key, Value, Options) :-
 swish_config(Key, Value, _) :-
 	config(Key, Value).
 
-% We need to use '$swish wrapper' with a variable _residuals in
-% versions that support the `var_prefix` option.
-:- if(current_prolog_flag(var_prefix, _)).
 config(residuals_var, '_residuals').
+:- if(exists_source(library(wfs))).
+config(wfs_residual_program_var, '_wfs_residual_program').
 :- endif.
+
 
 		 /*******************************
 		 *             LOGIN		*

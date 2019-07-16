@@ -600,6 +600,16 @@ define([ "cm/lib/codemirror",
     },
 
     /**
+     * Grab the focus
+     */
+    focus: function() {
+      var data = this.data(pluginName);
+      if ( data )
+	data.cm.focus();
+      return this;
+    },
+
+    /**
      * Called if the editor changes from clean to dirty or visa versa.
      * This triggers `data-is-clean`, which is trapped by the tab to
      * indicate the changed state of the editor.
@@ -1416,28 +1426,50 @@ define([ "cm/lib/codemirror",
 
     /**
      * @param {String} [query] query to get the variables from
-     * @param {Boolean} [anon] if `true`, also include _X variables.
-     * @return {List.string} is a list of Prolog variables without
-     * duplicates
+     * @param {Object} [options]
+     * @param {Boolean} [options.anon] if `true`, also include _X
+     * variables.
+     * @param {Boolean} [options.projection] if `true` and there is
+     * a projection, only include the variables from the projection.
+     * @return {List.string} is a list of Prolog variables
+     * without duplicates
      */
 
-    variables: function(query, anon) {
+    variables: function(query, options) {
       var qspan = $.el.span({class:"query cm-s-prolog"});
       var vars = [];
+
+      options = options||{};
 
       CodeMirror.runMode(query, "prolog", qspan);
 
       function addVars(selector) {
+	var incl = true;
+	var use_proj = false;
+
 	$(qspan).find(selector).each(function() {
-	  var name = $(this).text();
-	  if ( vars.indexOf(name) < 0 )
-	    vars.push(name);
+	  var elem = $(this);
+	  var name = elem.text();
+
+	  if ( elem.hasClass("cm-functor") ) {
+	    if ( name == "projection" ) { use_proj = true;
+	    } else if ( use_proj ) {
+	      incl = false;
+	    }
+	  } else {
+	    if ( incl && vars.indexOf(name) < 0 )
+	      vars.push(name);
+	  }
 	});
       }
 
-      addVars("span.cm-var");
-      if ( anon )
-	addVars("span.cm-var-2");
+      if ( options.projection ) {
+	addVars("span.cm-var,span.cm-var-2,span.cm-functor");
+      } else {
+	addVars("span.cm-var");
+	if ( options.anon )
+	  addVars("span.cm-var-2");
+      }
 
       return vars;
     },
